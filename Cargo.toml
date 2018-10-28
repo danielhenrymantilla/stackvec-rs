@@ -1,0 +1,20 @@
+[package]
+name = "stackvec"
+version = "0.0.1"
+authors = ["Daniel Henry-Mantilla <daniel.henry.mantilla@gmail.com>"]
+
+description = "A crate to use stack-allocated Vectors (performance and/or no-std)"
+
+documentation = "https://docs.rs/stackvec/"
+homepage = "https://crates.io/crates/stackvec"
+repository = "https://github.com/danielhenrymantilla/stackvec-rs"
+
+readme = "README.md"
+
+keywords = ["stack", "vec", "inline", "no-std", "performance"]
+
+categories = ["no-std", "memory-management", "rust-patterns"]
+
+license = "MIT"
+
+[dependencies]
