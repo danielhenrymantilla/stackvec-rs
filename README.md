@@ -8,7 +8,7 @@ A rust crate to use stack-allocated vectors (to improve performance and/or when 
 ## ⚠️⚠️ Warning: `unsafe` is used ⚠️⚠️
 And hasn't been thoroughly tested yet. It is thus ill-suited for production. Use at your own risk.
 
-Since [stackvec-rs][Documentation] provides very similar functionality to the more mature [`arrayvec`](https://docs.rs/arrayvec/0.4.7/arrayvec/), you should use that crate until [stackvec-rs][Documentation] is mature enough (version 0.1.0 or even 1.0.0)
+Since [stackvec][Documentation] provides very similar functionality to the more mature [`arrayvec`](https://docs.rs/arrayvec/0.4.7/arrayvec/), you should use that crate until [stackvec][Documentation] is mature enough (version 0.1.0 or even 1.0.0)
 
 
 ## Motivation
