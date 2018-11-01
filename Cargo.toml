@@ -1,12 +1,12 @@
 [package]
 name = "stackvec"
-version = "0.0.1"
+version = "0.0.2"
 authors = ["Daniel Henry-Mantilla <daniel.henry.mantilla@gmail.com>"]
 
 description = "A crate to use stack-allocated Vectors (performance and/or no-std)"
 
 documentation = "https://docs.rs/stackvec/"
-homepage = "https://crates.io/crates/stackvec"
+homepage = "https://github.com/danielhenrymantilla/stackvec-rs"
 repository = "https://github.com/danielhenrymantilla/stackvec-rs"
 
 readme = "README.md"
@@ -18,3 +18,32 @@ categories = ["no-std", "memory-management", "rust-patterns"]
 license = "MIT"
 
 [dependencies]
+
+[profile.dev]
+opt-level = 0
+codegen-units = 4
+debug-assertions = true
+
+[profile.release]
+debug = false
+opt-level = 3
+lto = true
+debug-assertions = false
+overflow-checks = false
+
+[profile.bench]
+debug = true
+opt-level = 3
+lto = true
+debug-assertions = false
+overflow-checks = false
+
+[features]
+nightly = []
+
+[package.metadata.docs.rs]
+no-default-features = true
+features = [ "nightly" ]
+
+[badges]
+codecov = {repository = "https://github.com/danielhenrymantilla/stackvec-rs", branch = "master", service = "github"}

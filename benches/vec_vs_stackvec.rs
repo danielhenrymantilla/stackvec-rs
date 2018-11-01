@@ -1,5 +1,5 @@
-// cargo +nightly bench
-#![cfg(nightly)]
+// $ cargo +nightly bench --features nightly
+#![cfg(all(test, feature = "nightly"))]
 #![feature(test)]
 
 extern crate stackvec;
@@ -14,7 +14,7 @@ use ::test::{
 // #[inline(always)] fn black_box<T> (x: T) -> T { x }
 
 #[bench]
-fn stackvec_append(benchmark: &mut Bencher)
+fn stackvec_extend_by_ref(benchmark: &mut Bencher)
 {
     benchmark.iter(|| {
         for n in 0 .. (0x400 - 6) {
@@ -31,7 +31,7 @@ fn stackvec_append(benchmark: &mut Bencher)
 }
 
 #[bench]
-fn vec_append(benchmark: &mut Bencher)
+fn vec_extend_by_ref(benchmark: &mut Bencher)
 {
     benchmark.iter(|| {
         for n in 0 .. (0x400 - 6) {
