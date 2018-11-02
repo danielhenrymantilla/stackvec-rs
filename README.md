@@ -5,6 +5,11 @@ A rust crate to use stack-allocated vectors (to improve performance and/or when 
 * [Repository]
 * [crates.io]
 
+[![Travis-CI Status](https://travis-ci.org/danielhenrymantilla/stackvec-rs.svg?branch=master)](https://travis-ci.org/danielhenrymantilla/stackvec-rs)
+[![Latest version](https://img.shields.io/crates/v/stackvec.svg)](https://crates.io/crates/stackvec)
+[![Documentation](https://docs.rs/stackvec/badge.svg)](https://docs.rs/stackvec)
+[![License](https://img.shields.io/crates/l/stackvec.svg)](https://github.com/danielhenrymantilla/stackvec-rs#license)
+
 ## ⚠️⚠️ Warning: `unsafe` is used ⚠️⚠️
 And hasn't been thoroughly tested yet. It is thus ill-suited for production. Use at your own risk.
 
