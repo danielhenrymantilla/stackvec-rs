@@ -46,4 +46,5 @@ no-default-features = true
 features = [ "nightly" ]
 
 [badges]
+travis-ci = {repository = "https://github.com/danielhenrymantilla/stackvec-rs", branch = "master"}
 codecov = {repository = "https://github.com/danielhenrymantilla/stackvec-rs", branch = "master", service = "github"}
