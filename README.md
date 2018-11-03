@@ -1,17 +1,15 @@
-# [stackvec-rs][Documentation] (version 0.0.2)
-A rust crate to use stack-allocated vectors (to improve performance and/or when there is no std)
+# `[stack;vec]`
 
-* [Documentation (WIP)][Documentation]
-* [Repository]
-* [crates.io]
+**A rust crate to use stack-allocated vectors (to improve performance and/or when there is no std)**
+
+[![Repository](https://img.shields.io/badge/repository-GitHub-brightgreen.svg)](https://github.com/danielhenrymantilla/stackvec-rs) [![Latest version](https://img.shields.io/crates/v/stackvec.svg)](https://crates.io/crates/stackvec) [![Documentation](https://docs.rs/stackvec/badge.svg)](https://docs.rs/stackvec)
 
 [![Travis-CI Status](https://travis-ci.org/danielhenrymantilla/stackvec-rs.svg?branch=master)](https://travis-ci.org/danielhenrymantilla/stackvec-rs)
-[![Latest version](https://img.shields.io/crates/v/stackvec.svg)](https://crates.io/crates/stackvec)
-[![Documentation](https://docs.rs/stackvec/badge.svg)](https://docs.rs/stackvec)
+[![Test code coverage](https://codecov.io/gh/danielhenrymantilla/stackvec-rs/branch/master/graph/badge.svg)](https://codecov.io/gh/danielhenrymantilla/stackvec-rs)
 [![License](https://img.shields.io/crates/l/stackvec.svg)](https://github.com/danielhenrymantilla/stackvec-rs#license)
 
 ## ⚠️⚠️ Warning: `unsafe` is used ⚠️⚠️
-And hasn't been thoroughly tested yet. It is thus ill-suited for production. Use at your own risk.
+And hasn't been thoroughly tested yet (for instance, the code is not [exception-safe](https://doc.rust-lang.org/nomicon/exception-safety.html)). It is thus ill-suited for production. Use at your own risk.
 
 Since [stackvec][Documentation] provides very similar functionality to the more mature [`arrayvec`](https://docs.rs/arrayvec/0.4.7/arrayvec/), you should use that crate until [stackvec][Documentation] is mature enough (version 0.1.0 or even 1.0.0)
 
