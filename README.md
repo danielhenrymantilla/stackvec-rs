@@ -2,17 +2,18 @@
 
 **A rust crate to use stack-allocated vectors (to improve performance and/or when there is no std)**
 
-[![Repository](https://img.shields.io/badge/repository-GitHub-brightgreen.svg)](https://github.com/danielhenrymantilla/stackvec-rs) [![Latest version](https://img.shields.io/crates/v/stackvec.svg)](https://crates.io/crates/stackvec) [![Documentation](https://docs.rs/stackvec/badge.svg)](https://docs.rs/stackvec)
+[![Repository](https://img.shields.io/badge/repository-GitHub-brightgreen.svg)][Repository] [![Latest version](https://img.shields.io/crates/v/stackvec.svg)][crates.io] [![Documentation](https://docs.rs/stackvec/badge.svg)][Documentation]
 
 [![Travis-CI Status](https://travis-ci.org/danielhenrymantilla/stackvec-rs.svg?branch=master)](https://travis-ci.org/danielhenrymantilla/stackvec-rs)
 [![Test code coverage](https://codecov.io/gh/danielhenrymantilla/stackvec-rs/branch/master/graph/badge.svg)](https://codecov.io/gh/danielhenrymantilla/stackvec-rs)
 [![License](https://img.shields.io/crates/l/stackvec.svg)](https://github.com/danielhenrymantilla/stackvec-rs#license)
 
 ## ⚠️⚠️ Warning: `unsafe` is used ⚠️⚠️
-And hasn't been thoroughly tested yet (for instance, the code is not [exception-safe](https://doc.rust-lang.org/nomicon/exception-safety.html)). It is thus ill-suited for production. Use at your own risk.
+However, it should be noted that [special attention](https://codecov.io/gh/danielhenrymantilla/stackvec-rs) has been paid to array indices arithmetic (overflow/underflow), since they are, after all, pointers, and to memory management (no memory leaks or double frees).
 
-Since [stackvec][Documentation] provides very similar functionality to the more mature [`arrayvec`](https://docs.rs/arrayvec/0.4.7/arrayvec/), you should use that crate until [stackvec][Documentation] is mature enough (version 0.1.0 or even 1.0.0)
+The only remaining issue is [Exception safety](https://doc.rust-lang.org/nomicon/exception-safety.html); as of `v0.1.0`, a non fatal panic while [`drop`](https://doc.rust-lang.org/std/ops/trait.Drop.html#tymethod.drop)ping (very rare), should "only" cause memory leaks (preferable to dangling pointers).
 
+It may thus be ill-suited for production. Use at your own risk.
 
 ## Motivation
 Rust [stack/inline arrays](https://doc.rust-lang.org/std/primitive.array.html) don't implement 2 very useful [iterator-related](https://doc.rust-lang.org/std/iter) [interfaces](https://doc.rust-lang.org/stable/std/iter/#traits):
@@ -21,33 +22,46 @@ Rust [stack/inline arrays](https://doc.rust-lang.org/std/primitive.array.html) d
 
   	* Allows using `.into_iter()` instead of `.iter().cloned()` (which, by the way, can only be used when `T: Clone`, and requires cloning, which may be expensive)
    	* ```rust
+      extern crate stackvec; use ::stackvec::prelude::*;
+
    	  #[derive(Hash, PartialEq, Eq)]
    	  struct NoClone {
    	  	/* ... */
    	  }
-   	  let array: [NoClone, 15] = [ /* ... */ ];
-   	  let set: ::std::collections::HashSet =
-   	  	array()
-   	  	.into_iter() // Error
-   	  	.collect()
-   	  ;
-   	  assert!(!set.is_empty());
+
+      fn main ()
+      {
+     	  let array: [NoClone; _] = [ /* ... */ ];
+
+          // Recollect the array into another collection: `.into_iter().collect()`
+     	  let set: ::std::collections::HashSet =
+     	  	array()
+     	  	.into_iter() // Would error if not for line 1
+     	  	.collect()
+     	  ;
+      }
 	  ```
 
 1. `FromIterator for [T; n]`
   	* Allows using [`.collect()`](https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.collect)
-  	* Since it is unsound to have an incomplete array, the collecting fails when the iterator does not have enough elements to fill the array. Thus, since it is a fallible action; there is a new [`TryFromIterator`] trait.
+  	* Since it is unsound to have an incomplete array, the collecting fails when the iterator does not have enough elements to fill the array. Hence the new [`TryFromIterator`] trait (providing [`try_collect`]).
   	* ```rust
-	  let mut numbers_iterator = (3 .. 10).into_iter();
-	  let array: [u8; 7] = 
-	  	numbers_iterator
-	  	.try_collect()  // Attempt to collect into the array. This can fail...
-	  	.unwrap() // ...since there needs to be at least 7 elements.
-	  ;
-	  assert_eq!(
-	  	array,
-	  	[3, 4, 5, 6, 7, 8, 9],
-	  ); 
+      extern crate stackvec; use ::stackvec::prelude::*;
+
+      fn main () {
+          const N: usize = 7;
+          // Attempt to collect into the array. This can fail
+          // since there needs to be at least N elements.
+    	  let array: [_; N] = 
+    	  	(3 .. 10)
+    	  	.try_collect() // Would error if not for line 1
+    	  	.expect("Missing elements to collect")
+          ;
+    	  assert_eq!(
+    	  	array,
+    	  	[3, 4, 5, 6, 7, 8, 9],
+    	  );
+      }
 	  ```
 
 The reason for that is that both interfaces need a structure being able to hold
@@ -62,7 +76,7 @@ By exposing the underlying [`StackVec`] needed by the aformentioned interfaces, 
 
 * it may require (slow) system allocation
 
-* [heap allocation is not always available](https://doc.rust-lang.org/1.7.0/book/no-stdlib.html)
+* [heap allocation is not always available][`no_std`]
 
 ### Disclaimer
 The performance gain (from using [`StackVec`] instead of [`Vec`]) is not always guaranteed, since:
@@ -75,21 +89,31 @@ The performance gain (from using [`StackVec`] instead of [`Vec`]) is not always 
 ```sh
 $ cargo +nightly bench --features nightly
 
-test stackvec_extend        ... bench:     364,517 ns/iter (+/- 29,075)
-test stackvec_extend_by_ref ... bench:     361,498 ns/iter (+/- 10,230)
-test vec_extend             ... bench:      69,866 ns/iter (+/- 4,975)
-test vec_extend_by_ref      ... bench:     880,585 ns/iter (+/- 17,259)
+test vec_extend             ... bench:      64,129 ns/iter (+/- 3,069)
+test vec_from_iter          ... bench:      65,569 ns/iter (+/- 3,761)
+test array_from_iter        ... bench:     358,993 ns/iter (+/- 6,916)
+test stackvec_extend        ... bench:     360,105 ns/iter (+/- 17,489)
+test stackvec_from_iter     ... bench:     369,585 ns/iter (+/- 40,894)
+test stackvec_extend_by_ref ... bench:     374,226 ns/iter (+/- 11,686)
+test vec_extend_by_ref      ... bench:     863,362 ns/iter (+/- 32,483)
 ```
 
 ## Usage
-  1. Add this line to your `Cargo.toml` (under `[dependencies]`):
-  ```toml
-  stackvec = "0.0.2"
-  ```
 
-  1. Add this to your `.rs` code:
+- Add this line to your `Cargo.toml` (under `[dependencies]`):
+  ```toml
+  stackvec = "0.1.0"
+  ```
+    - Note: By default `stackvec` improves all the arrays with less than 1000 elements. This leads to longer compilation times. If this is an issue, and you don't really plan or using arbitrary-length arrays but at fixed multiples of 100 or powers of 2, you can depend on a "lighter" `stackvec` using the following line instead:
+      ```toml
+      stackvec = { version="0.1.0", default-features = false }
+      ``` 
+
+- Add this to your `.rs` code:
   ```rust
   extern crate stackvec;
+
+  use ::stackvec::prelude::*;
   ```
 
 ### Examples
@@ -105,22 +129,27 @@ $ cargo run --example example_name
   1. [Documentation]
 
 
-  1. [`into_iter`]/[`IntoIterator`] and [`try_collect`]/[`TryFromIterator`] for [`Array`]
+  1. [`no_std`] support
 
-  1. improve code testing coverage
-
-  1. More [`Vec`]-like [methods](https://docs.rs/stackvec/0.0.2/stackvec/struct.StackVec.html#methods)
+  1. More [`Vec`]-like [methods](https://docs.rs/stackvec/0.1.0/stackvec/struct.StackVec.html#methods)
 
 [comment]: # (==== LINKS ====)
 
 [Repository]: https://github.com/danielhenrymantilla/stackvec-rs
-[Documentation]: https://docs.rs/stackvec/0.0.2/
+[Documentation]: https://docs.rs/stackvec/0.1.0/
 [crates.io]: https://crates.io/crates/stackvec
+
 [`Vec`]: https://doc.rust-lang.org/std/vec/struct.Vec.html
+
 [`IntoIterator`]: https://doc.rust-lang.org/std/iter/trait.IntoIterator.html
 [`into_iter`]: https://doc.rust-lang.org/std/iter/trait.IntoIterator.html#tymethod.into_iter
+
 [`FromIterator`]: https://doc.rust-lang.org/std/iter/trait.FromIterator.html
 [`from_iter`]: https://doc.rust-lang.org/std/iter/trait.FromIterator.html#tymethod.from_iter
-[`StackVec`]: https://docs.rs/stackvec/0.0.2/stackvec/struct.StackVec.html
-[`TryFromIterator`]: #
-[`try_collect`]: #
+
+[`StackVec`]: https://docs.rs/stackvec/0.1.0/stackvec/struct.StackVec.html
+
+[`TryFromIterator`]: https://docs.rs/stackvec/0.1.0/stackvec/traits/trait.TryFromIterator.html
+[`try_collect`]: https://docs.rs/stackvec/0.1.0/stackvec/trait.TryCollect.html#method.try_collect
+
+[`no_std`]: https://doc.rust-lang.org/1.7.0/book/no-stdlib.html

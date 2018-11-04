@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 extern crate stackvec;
 use stackvec::prelude::*;
 
@@ -6,30 +8,63 @@ use ::std::iter::{
 	Iterator,
 };
 
-static NUMBERS: &[u8] = &[
+static NUMBERS: [u8; 9] = [
 	5, 8, 9, 10, 6, 7, 4, 6, 7
 ];
 
 mod counted_instances {
-	use ::std::cell;
+	use ::std::cell::Cell;
 
 	thread_local! {
-		static INSTANCES_COUNT: cell::Cell<isize> = cell::Cell::new(0);
+		static INSTANCES_COUNT: Cell<isize> = Cell::new(0);
 	}
 
 	#[derive(Debug)]
 	pub struct Instance(());
 
-	impl Instance {
-		pub fn new () -> Self
+	impl Default for Instance {
+		fn default() -> Self
 		{
 			INSTANCES_COUNT.with(|slf| slf.set(slf.get() + 1));
 			Instance(())
 		}
+	}
+
+
+	impl Instance {
+		#[allow(non_upper_case_globals)]
+		pub const new
+			: fn() -> Self
+			= Self::default;
+
+		pub fn clone (&self) -> Self { Self::new() }
 
 		pub fn total_count () -> isize
 		{
-			INSTANCES_COUNT.with(cell::Cell::get)
+			INSTANCES_COUNT.with(Cell::get)
+		}
+
+		pub fn count_assert_balanced ()
+		{
+			use ::std::cmp::Ordering::*;
+			let instance_count = Self::total_count();
+			match instance_count.cmp(&0) {
+				Less => panic!(
+					concat!(
+						"Error, instance count {} < 0 ",
+						r"=> /!\ double free /!\",
+					),
+					instance_count,
+				),
+				Greater => panic!(
+					concat!(
+						"Error, instance count {} > 0 ",
+						r"=> /!\ memory leak /!\",
+					),
+					instance_count,
+				),
+				Equal =>(),
+			} 
 		}
 	}
 
@@ -42,7 +77,7 @@ mod counted_instances {
 }
 
 #[test]
-fn build()
+fn build ()
 {
 	let array = StackVec::<[u8; 10]>::from_iter( 
 		NUMBERS.iter().cloned()
@@ -60,7 +95,7 @@ fn build_with_drop_full ()
 		);
 	    println!("{:?}", array);
 	}
-    assert_eq!(Instance::total_count(), 0, "Instance count is balanced");
+	Instance::count_assert_balanced();
 }
 
 #[test]
@@ -74,52 +109,50 @@ fn build_with_drop_partial ()
 		).unwrap();
 	    println!("{:?}", array);
 	}
-    assert_eq!(Instance::total_count(), 0, "Instance count is balanced");
+	Instance::count_assert_balanced();
 }
 
 #[test]
-fn extend()
+fn extend ()
 {
 	let mut array = StackVec::<[u8; 0x40]>::
 		default();
     array.extend(Iterator::chain(
         (0 .. 56).map(|_| 0),
-        b"Shrewk".iter().cloned(),
+        b"Stackvec".iter().cloned(),
     ));
     println!("{:?}", array);
 }
 
 
 #[test]
-fn iter()
+fn iter ()
 {
 	let array = StackVec::<[u8; 10]>::from_iter(
 		NUMBERS.iter().cloned()
 	);
-	for (value, expected_value) in Iterator::zip(array.iter(), NUMBERS)
+	for (value, expected_value) in Iterator::zip(array.iter(), &NUMBERS)
 	{
 	    assert_eq!(value, expected_value);
 	};
 }
 
 #[test]
-fn iter_mut()
+fn iter_mut ()
 {
-	let mut array = StackVec::<[u8; 10]>::from_iter(
-		iter::repeat(0)
-	);
-	for (array_i, &value) in Iterator::zip(array.iter_mut(), NUMBERS)
+	let mut array = StackVec::from([0_u8; 10]);
+	for (array_i, &value) in Iterator::zip(array.iter_mut(), &NUMBERS)
 	{
 		*array_i = value;
 	};
-	for (value, expected_value) in Iterator::zip(array.iter(), NUMBERS)
+	for (value, expected_value) in Iterator::zip(array.iter(), &NUMBERS)
 	{
 	    assert_eq!(value, expected_value);
 	};
 }
 
 #[test]
-fn into_iter()
+fn into_iter ()
 {
 	let array = StackVec::<[u8; 10]>::from_iter(
 		NUMBERS.iter().cloned()
@@ -131,17 +164,26 @@ fn into_iter()
 }
 
 #[test]
+fn array_into_iter ()
+{
+	assert_eq!(
+		Vec::from_iter(NUMBERS.into_iter()),
+		Vec::from_iter(NUMBERS.iter().cloned()),
+	);
+}
+
+#[test]
 fn into_iter_with_drop_full ()
 {
 	use counted_instances::*;
 	{
-		let array = StackVec::<[Instance; 3]>::from_iter( 
+		let array = StackVec::<[_; 3]>::from_iter( 
 			iter::repeat_with(Instance::new)
 		);
 	    println!("{:?}", array);
 	    for _ in array {} 
 	}
-    assert_eq!(Instance::total_count(), 0, "Instance count is balanced");
+	Instance::count_assert_balanced();
 }
 
 #[test]
@@ -149,14 +191,14 @@ fn into_iter_with_drop_partial_left ()
 {
 	use counted_instances::*;
 	{
-		let array = StackVec::<[Instance; 3]>::from_iter( 
+		let array = StackVec::<[_; 3]>::from_iter( 
 			iter::repeat_with(Instance::new)
 		);
 	    println!("{:?}", array);
 	    let mut iterator = array.into_iter();
 	    let _ = iterator.next();
 	}
-    assert_eq!(Instance::total_count(), 0, "Instance count is balanced");
+	Instance::count_assert_balanced();
 }
 
 
@@ -166,13 +208,13 @@ fn into_iter_with_drop_partial_right ()
 {
 	use counted_instances::*;
 	{
-		let array = StackVec::<[Instance; 3]>::from_iter( 
+		let array = StackVec::<[_; 3]>::from_iter( 
 			iter::repeat_with(Instance::new)
 		);
 	    println!("{:?}", array);
 	    let mut iterator = array.into_iter();
 	    let _ = iterator.next_back();
 	}
-    assert_eq!(Instance::total_count(), 0, "Instance count is balanced");
+	Instance::count_assert_balanced();
 }
 
