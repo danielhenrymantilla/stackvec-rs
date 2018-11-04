@@ -1,6 +1,6 @@
 [package]
 name = "stackvec"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Daniel Henry-Mantilla <daniel.henry.mantilla@gmail.com>"]
 
 description = "A crate to use stack-allocated Vectors (performance and/or no-std)"
@@ -49,5 +49,5 @@ no-default-features = true
 features = [ "nightly", "a_thousand_array_impls" ]
 
 [badges]
-travis-ci = {repository = "https://github.com/danielhenrymantilla/stackvec-rs", branch = "master"}
-codecov = {repository = "https://github.com/danielhenrymantilla/stackvec-rs", branch = "master", service = "github"}
+travis-ci = {repository = "danielhenrymantilla/stackvec-rs", branch = "master"}
+codecov = {repository = "danielhenrymantilla/stackvec-rs", branch = "master", service = "github"}
