@@ -67,7 +67,7 @@ impl<A: Array> iter::FusedIterator for Iter<A> {}
 unsafe impl<A: Array> iter::TrustedLen for Iter<A> {}
 
 impl<A: Array> ExactSizeIterator for Iter<A> {
-    #[inline(always)]
+    #[inline]
     fn len (
         self: &Self,
     ) -> usize
@@ -76,7 +76,7 @@ impl<A: Array> ExactSizeIterator for Iter<A> {
     }
 
     #[cfg(feature = "nightly")]
-    #[inline(always)]
+    #[inline]
     fn is_empty (
         self: &Self,
     ) -> bool
@@ -113,7 +113,7 @@ impl<A: Array> IntoIterator for StackVec<A> {
 
     type IntoIter = Iter<A>;
 
-    #[inline]
+    #[inline(always)]
     fn into_iter (
         self: Self,
     ) -> Self::IntoIter

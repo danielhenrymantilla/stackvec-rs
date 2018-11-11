@@ -1,6 +1,6 @@
 [package]
 name = "stackvec"
-version = "0.1.1"
+version = "0.2.1"
 authors = ["Daniel Henry-Mantilla <daniel.henry.mantilla@gmail.com>"]
 
 description = "A crate to use stack-allocated Vectors (performance and/or no-std)"

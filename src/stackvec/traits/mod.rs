@@ -52,6 +52,7 @@ mod into_iter;
 pub use self::array_into_iter::*;
 mod array_into_iter;
 
+pub use self::try_into::*;
 mod try_into;
 
 pub use self::try_from_iter::*;

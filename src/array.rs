@@ -1,16 +1,73 @@
-pub
-trait Sealed {}
+pub trait Sealed {}
 
-pub
-unsafe trait Array: Sealed + Sized {
+/// Trait to abstract over fixed-size (thus inline-able) [`array`]s.
+///
+/// Suprisingly, neither [rust's core](
+/// https://doc.rust-lang.org/core) nor its [standard library](
+/// https://doc.rust-lang.org/std) provide a unified abstraction over
+/// fixed-size [`array`]s. Hence [this trait].
+///
+/// The trait is both `Sealed` and `unsafe`, to avoid it being implemented
+/// on non-array elements, and to remind of the implicit assumptions about
+/// the object's memory layout and interactions.
+///
+/// Sadly, this means that downstream crates cannot implement [this trait], not
+/// even for an actual but very specific [`array`] that has not been already
+/// given an implementation in this crate.
+///
+/// That's why, by [default](
+/// https://doc.rust-lang.org/cargo/reference/manifest.html#rules),
+/// the feature `a_thousand_array_impls` is enabled: it provides
+/// implementations of [this trait] for **all arrays of
+/// [`LEN`][`Array::LEN`] `<= 1000`**.
+/// The reason for this is that
+/// [`StackVec`]s conversions to/from [`array`]s (used by 
+/// [`array.into_iter()`][`::stackvec::traits::ArrayIntoIter`]
+/// and [`.try_collect()`][`::stackvec::traits::TryFromIterator`])
+/// [involve / require a full `StackVec`][`::stackvec::traits::TryInto`], which
+/// in turn requires very fine-grained control over the [`Array::LEN`] for the
+/// operations to be efficient (avoid dealing with extra stuff / garbage).
+///
+/// However, all these `impl`s come at a very steep cost at compile time and
+/// size, and may not be needed for those whishing to manipulate [`StackVec`]s
+/// without converting to/from [`array`]s. In that case, the classic
+/// exponentially-grown [`Array::LEN`]s for the backing [`StackVec::CAPACITY`]
+/// should suffice:
+///
+/// - you may opt out of the `a_thousand_array_impls` [feature](
+/// https://doc.rust-lang.org/cargo/reference/manifest.html#rules) replacing the
+///   `stackvec = ...` line in the `Cargo.toml` file of your project by:
+///   ```toml
+///   stackvec = { version = ... , default-features = false }
+///   ```
+///
+/// [`array`]: https://doc.rust-lang.org/std/primitive.array.html
+/// [this trait]: `::stackvec::Array`
+/// [`StackVec`]: `::stackvec::StackVec`
+/// [`StackVec::CAPACITY`]: `::stackvec::StackVec::CAPACITY`
+pub unsafe trait Array: Sealed + Sized {
+    /// `[Item; LEN]`
     type Item: Sized;
 
-    const COUNT: usize;
+    /// `[Item; LEN]`
+    const LEN: usize;
 
+    /// Read-only pointer to the first (`0`-th) element of the array.
+    ///
+    /// Used to get a pointer to the `n`-th element using [`.offset(n)`].
+    ///
+    /// [`.offset(n)`]:
+    /// https://doc.rust-lang.org/std/primitive.pointer.html#method.offset
     fn as_ptr (
         self: &Self,
     ) -> *const Self::Item;
 
+    /// Read-write pointer to the first (`0`-th) element of the array.
+    ///
+    /// Used to get a pointer to the `n`-th element using [`.offset(n)`].
+    ///
+    /// [`.offset(n)`]:
+    /// https://doc.rust-lang.org/std/primitive.pointer.html#method.offset-1
     fn as_mut_ptr (
         self: &mut Self,
     ) -> *mut Self::Item;
@@ -22,7 +79,7 @@ macro_rules! impl_array {
         unsafe impl<T: Sized> Array for [T; $N] {
             type Item = T;
 
-            const COUNT: usize = $N;
+            const LEN: usize = $N;
 
             #[inline(always)]
             fn as_ptr (
@@ -64,16 +121,16 @@ impl_arrays! {
     96,   97,   98,   99,   100,
 }
 
-// 1024 and onwards
-impl_arrays! {
-    0x400, 0x800, 0x1000, 0x2000, 0x4000,
-        0x600, 0xc00, 0x1800, 0x3000,
-}
-
 // 100 < ... <= 1000 (sparse)
 #[cfg(not(feature = "a_thousand_array_impls"))]
 impl_arrays! {
     200,  256,  300,  400,  500,  512,  600,  700,  800,  900,  1000,
+}
+
+// 1024 and onwards
+impl_arrays! {
+    0x400, 0x800, 0x1000, 0x2000, 0x4000,
+        0x600, 0xc00, 0x1800, 0x3000,
 }
 
 // 100 < ... <= 1000 (full)

@@ -7,15 +7,15 @@ impl<A: Array> iter::Extend<A::Item> for StackVec<A> {
         iterable: Iterable,
     )
     {
-        debug_assert!(self.len <= Self::CAPACITY);
         // This is currently the most optimized `extend` implementation,
         // branching-prediction-wise
-        if self.len == Self::CAPACITY {
+        let mut len = self.len;
+        debug_assert!(len <= Self::CAPACITY);
+        if len == Self::CAPACITY {
             return
         };
-        for value in iterable {
-            let mut len = self.len;
-            unsafe {
+        unsafe {
+            for value in iterable {
                 debug_assert!(len < Self::CAPACITY);
                 ptr::write(
                     self.array.as_mut_ptr()
@@ -24,8 +24,8 @@ impl<A: Array> iter::Extend<A::Item> for StackVec<A> {
                 );
                 len += 1;
                 self.len = len;
+                if len == Self::CAPACITY { break };
             };
-            if len == Self::CAPACITY { break };
         };
 
         // // This version was less optimized:
